@@ -10,32 +10,123 @@ Tests for `aiohttp_validate` module.
 
 import pytest
 
-from contextlib import contextmanager
-from click.testing import CliRunner
-
-from aiohttp_validate import aiohttp_validate
-from aiohttp_validate import cli
+from datetime import datetime
+from aiohttp_validate import validate
+from aiohttp import web
 
 
-@pytest.fixture
-def response():
-    """Sample pytest fixture.
-    See more at: http://doc.pytest.org/en/latest/fixture.html
-    """
-    # import requests
-    # return requests.get('https://github.com/audreyr/cookiecutter-pypackage')
+@validate(
+    request_schema={
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+        },
+        "required": ["text"],
+        "additionalProperties": False
+    },
+    response_schema=None,
+)
+async def hello(request, *args):
+    return "Hello world!"
+
+@validate(
+    request_schema=None,
+    response_schema=None,
+)
+async def invalid_enc(request, decoded):
+    return datetime.now()
+
+@validate(
+    request_schema=None,
+    response_schema={
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+        },
+        "required": ["text"],
+        "additionalProperties": False
+    }
+)
+async def validate_output(request, *args):
+    return request
+
+async def test_invalid_request(test_client, loop):
+    app = web.Application(loop=loop)
+    app.router.add_post('/', hello)
+    app.router.add_get('/', hello)
+    client = await test_client(app)
+
+    resp = await client.get('/')
+    assert resp.status == 400
+    text = await resp.json()
+    assert 'Request is malformed' in text["error"]
+
+    resp = await client.post('/')
+    assert resp.status == 400
+    text = await resp.json()
+    assert 'Request is malformed' in text["error"]
+
+    resp = await client.post('/', data="123afasdf")
+    assert resp.status == 400
+    text = await resp.json()
+    assert 'Request is malformed' in text["error"]
+
+async def test_wrong_request_format(test_client, loop):
+    app = web.Application(loop=loop)
+    app.router.add_post('/', hello)
+    client = await test_client(app)
+
+    resp = await client.post('/', data='{"nottext": "foobar"}')
+    assert resp.status == 400
+    text = await resp.json()
+    assert 'Request is invalid' in text["error"]
+    assert text["errors"]
+
+async def test_correct_request(test_client, loop):
+    app = web.Application(loop=loop)
+    app.router.add_post('/', hello)
+    app.router.add_get('/', hello)
+    client = await test_client(app)
+
+    resp = await client.post('/', data='{"text": "foobar"}')
+    assert resp.status == 200
+    text = await resp.text()
+    assert 'Hello world' in text
+
+    resp = await client.get('/', data='{"text": "foobar"}')
+    assert resp.status == 200
+    text = await resp.text()
+    assert 'Hello world' in text
+
+async def test_invalid_response(test_client, loop):
+    app = web.Application(loop=loop)
+    app.router.add_post('/', invalid_enc)
+    app.router.add_get('/', invalid_enc)
+    client = await test_client(app)
+
+    resp = await client.post('/', data='{"text": "foobar"}')
+    assert resp.status == 500
+    text = await resp.json()
+    assert 'Response is malformed' in text["error"]
+
+    resp = await client.get('/', data='{"text": "foobar"}')
+    assert resp.status == 500
+    text = await resp.json()
+    assert 'Response is malformed' in text["error"]
 
 
-def test_content(response):
-    """Sample pytest test function with the pytest fixture as an argument.
-    """
-    # from bs4 import BeautifulSoup
-    # assert 'GitHub' in BeautifulSoup(response.content).title.string
-def test_command_line_interface():
-    runner = CliRunner()
-    result = runner.invoke(cli.main)
-    assert result.exit_code == 0
-    assert 'aiohttp_validate.cli.main' in result.output
-    help_result = runner.invoke(cli.main, ['--help'])
-    assert help_result.exit_code == 0
-    assert '--help  Show this message and exit.' in help_result.output
+async def test_wrong_response_format(test_client, loop):
+    app = web.Application(loop=loop)
+    app.router.add_post('/', validate_output)
+    client = await test_client(app)
+
+    resp = await client.post('/', data='{"text": "foobar"}')
+    text = await resp.json()
+    assert resp.status == 200
+    assert text["text"] == "foobar"
+
+    resp = await client.post('/', data='123')
+    assert resp.status == 400
+    text = await resp.json()
+    assert "Request is invalid" in text["error"]
+    assert text["errors"]

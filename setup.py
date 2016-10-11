@@ -10,12 +10,13 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'Click>=6.0',
-    # TODO: put package requirements here
+    'aiohttp==1.0.5',
+    'jsonschema==2.5.1',
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
+    'pytest==2.9.2',
+    'pytest-aiohttp==0.1.3',
 ]
 
 setup(
