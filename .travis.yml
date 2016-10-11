@@ -23,9 +23,6 @@ deploy:
   provider: pypi
 env:
 - TOXENV=py35
-- TOXENV=py34
-- TOXENV=py33
-- TOXENV=pypy
 install: pip install -U tox
 language: python
 python: 3.5
