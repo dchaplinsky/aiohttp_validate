@@ -9,7 +9,7 @@ from jsonschema.validators import validator_for
 
 __author__ = """Dmitry Chaplinsky"""
 __email__ = 'chaplinsky.dmitry@gmail.com'
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 
 def _raise_exception(cls, reason, data=None):
