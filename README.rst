@@ -18,23 +18,63 @@ aiohttp_validate
      :alt: Updates
 
 
-Simple library that helps you validate your API endpoints requests/responses with json schema
+Simple library that helps you validate your API endpoints requests/responses with jsonschema_. Documentation is also available here at https://aiohttp-validate.readthedocs.io.
 
 
-* Free software: MIT license
-* Documentation: https://aiohttp-validate.readthedocs.io.
 
+Installation
+------------
+Install from PyPI::
+
+    pip install aiohttp_validate
+
+Usage
+-----
+Complete example of validation for `text tokenization microservice`_::
+
+    from aiohttp_validate import validate
+
+    @validate(
+        request_schema={
+            "type": "object",
+            "properties": {
+                "text": {"type": "string"},
+            },
+            "required": ["text"],
+            "additionalProperties": False
+        },
+        response_schema={
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            }
+        }
+    )
+    async def tokenize_text_handler(request, *args):
+        return tokenize_text(request["text"])
 
 Features
 --------
-
-* TODO
+* The decorator to (optionally) validate the request to your aiohttp endpoint and it's response.
+* Easily integrates with aiohttp_swaggerify_ to automatically document your endpoints with swagger.
+* Validation errors are standardized and can be easily parsed by the clients of your service and also human-readable.
 
 Credits
----------
+-------
+That package is influenced by Tornado-JSON_ written by Hamza Faran 
+Code to parse errors is written by `Ruslan Karalkin`_
 
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+License
+-------
 
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+* Free software: MIT license
 
+.. _jsonschema: http://json-schema.org/
+.. _aiohttp_swaggerify: https://github.com/dchaplinsky/aiohttp_swaggerify
+.. _Tornado-JSON: https://github.com/hfaran/Tornado-JSON/
+.. _`Ruslan Karalkin`: https://github.com/rkaralkin
+.. _`text tokenization microservice`: https://github.com/lang-uk/tokenize-ms
