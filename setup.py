@@ -15,13 +15,13 @@ requirements = [
 ]
 
 test_requirements = [
-    'pytest==2.9.2',
+    'pytest==3.0.5',
     'pytest-aiohttp==0.1.3',
 ]
 
 setup(
     name='aiohttp_validate',
-    version='0.1.1',
+    version='1.0.0',
     description="Simple library that helps you validate your API endpoints requests/responses with json schema",
     long_description=readme + '\n\n' + history,
     author="Dmitry Chaplinsky",
@@ -43,7 +43,7 @@ setup(
     zip_safe=False,
     keywords='aiohttp_validate',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',

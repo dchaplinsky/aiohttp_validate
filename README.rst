@@ -63,6 +63,16 @@ Features
 * Easily integrates with aiohttp_swaggerify_ to automatically document your endpoints with swagger.
 * Validation errors are standardized and can be easily parsed by the clients of your service and also human-readable.
 
+
+Developing
+----------
+
+Install requirement and launch tests::
+
+    pip install -r requirements-dev.txt
+    py.test
+
+
 Credits
 -------
 That package is influenced by Tornado-JSON_ written by Hamza Faran 
