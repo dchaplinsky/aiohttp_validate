@@ -50,11 +50,11 @@ async def invalid_enc(request, decoded):
 async def validate_output(request, *args):
     return request
 
-async def test_invalid_request(test_client, loop):
+async def test_invalid_request(aiohttp_client, loop):
     app = web.Application(loop=loop)
     app.router.add_post('/', hello)
     app.router.add_get('/', hello)
-    client = await test_client(app)
+    client = await aiohttp_client(app)
 
     resp = await client.get('/')
     assert resp.status == 400
@@ -71,10 +71,10 @@ async def test_invalid_request(test_client, loop):
     text = await resp.json()
     assert 'Request is malformed' in text["error"]
 
-async def test_wrong_request_format(test_client, loop):
+async def test_wrong_request_format(aiohttp_client, loop):
     app = web.Application(loop=loop)
     app.router.add_post('/', hello)
-    client = await test_client(app)
+    client = await aiohttp_client(app)
 
     resp = await client.post('/', data='{"nottext": "foobar"}')
     assert resp.status == 400
@@ -82,11 +82,11 @@ async def test_wrong_request_format(test_client, loop):
     assert 'Request is invalid' in text["error"]
     assert text["errors"]
 
-async def test_correct_request(test_client, loop):
+async def test_correct_request(aiohttp_client, loop):
     app = web.Application(loop=loop)
     app.router.add_post('/', hello)
     app.router.add_get('/', hello)
-    client = await test_client(app)
+    client = await aiohttp_client(app)
 
     resp = await client.post('/', data='{"text": "foobar"}')
     assert resp.status == 200
@@ -98,11 +98,11 @@ async def test_correct_request(test_client, loop):
     text = await resp.text()
     assert 'Hello world' in text
 
-async def test_invalid_response(test_client, loop):
+async def test_invalid_response(aiohttp_client, loop):
     app = web.Application(loop=loop)
     app.router.add_post('/', invalid_enc)
     app.router.add_get('/', invalid_enc)
-    client = await test_client(app)
+    client = await aiohttp_client(app)
 
     resp = await client.post('/', data='{"text": "foobar"}')
     assert resp.status == 500
@@ -115,10 +115,10 @@ async def test_invalid_response(test_client, loop):
     assert 'Response is malformed' in text["error"]
 
 
-async def test_wrong_response_format(test_client, loop):
+async def test_wrong_response_format(aiohttp_client, loop):
     app = web.Application(loop=loop)
     app.router.add_post('/', validate_output)
-    client = await test_client(app)
+    client = await aiohttp_client(app)
 
     resp = await client.post('/', data='{"text": "foobar"}')
     text = await resp.json()
