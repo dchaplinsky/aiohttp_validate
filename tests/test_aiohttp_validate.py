@@ -8,8 +8,6 @@ test_aiohttp_validate
 Tests for `aiohttp_validate` module.
 """
 
-import pytest
-
 from datetime import datetime
 from aiohttp_validate import validate
 from aiohttp import web
@@ -29,12 +27,14 @@ from aiohttp import web
 async def hello(request, *args):
     return "Hello world!"
 
+
 @validate(
     request_schema=None,
     response_schema=None,
 )
 async def invalid_enc(request, decoded):
     return datetime.now()
+
 
 @validate(
     request_schema=None,
@@ -49,6 +49,7 @@ async def invalid_enc(request, decoded):
 )
 async def validate_output(request, *args):
     return request
+
 
 async def test_invalid_request(aiohttp_client, loop):
     app = web.Application(loop=loop)
@@ -71,6 +72,7 @@ async def test_invalid_request(aiohttp_client, loop):
     text = await resp.json()
     assert 'Request is malformed' in text["error"]
 
+
 async def test_wrong_request_format(aiohttp_client, loop):
     app = web.Application(loop=loop)
     app.router.add_post('/', hello)
@@ -81,6 +83,7 @@ async def test_wrong_request_format(aiohttp_client, loop):
     text = await resp.json()
     assert 'Request is invalid' in text["error"]
     assert text["errors"]
+
 
 async def test_correct_request(aiohttp_client, loop):
     app = web.Application(loop=loop)
@@ -97,6 +100,7 @@ async def test_correct_request(aiohttp_client, loop):
     assert resp.status == 200
     text = await resp.text()
     assert 'Hello world' in text
+
 
 async def test_invalid_response(aiohttp_client, loop):
     app = web.Application(loop=loop)
