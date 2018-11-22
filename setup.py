@@ -21,7 +21,7 @@ test_requirements = [
 
 setup(
     name='aiohttp_validate',
-    version='1.0.0',
+    version='1.0.1',
     description="Simple library that helps you validate your API endpoints requests/responses with json schema",
     long_description=readme + '\n\n' + history,
     author="Dmitry Chaplinsky",
