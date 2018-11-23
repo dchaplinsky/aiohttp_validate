@@ -10,18 +10,18 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'aiohttp==1.0.5',
-    'jsonschema==2.5.1',
+    'aiohttp>=3.0.0',
+    'jsonschema>=2.5.1',
 ]
 
 test_requirements = [
-    'pytest==3.0.5',
-    'pytest-aiohttp==0.1.3',
+    'pytest==4.0.0',
+    'pytest-aiohttp==0.2.0',
 ]
 
 setup(
     name='aiohttp_validate',
-    version='1.0.0',
+    version='1.0.1',
     description="Simple library that helps you validate your API endpoints requests/responses with json schema",
     long_description=readme + '\n\n' + history,
     author="Dmitry Chaplinsky",
