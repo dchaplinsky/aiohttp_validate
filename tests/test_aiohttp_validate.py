@@ -13,6 +13,7 @@ from aiohttp_validate import validate
 from aiohttp import web
 
 
+
 @validate(
     request_schema={
         "type": "object",
@@ -34,6 +35,36 @@ async def hello(request, *args):
 )
 async def invalid_enc(request, decoded):
     return datetime.now()
+
+
+class HelloView(web.View):
+    @validate(
+        request_schema={
+            "type": "object",
+            "properties": {
+                "text": {"type": "string"},
+            },
+            "required": ["text"],
+            "additionalProperties": False
+        },
+        response_schema=None,
+    )
+    async def get(self, data, request):
+        return "Hello world!"
+
+    @validate(
+        request_schema={
+            "type": "object",
+            "properties": {
+                "text": {"type": "string"},
+            },
+            "required": ["text"],
+            "additionalProperties": False
+        },
+        response_schema=None,
+    )
+    async def post(self, data, request):
+        return "Hello world!"
 
 
 @validate(
@@ -134,3 +165,19 @@ async def test_wrong_response_format(aiohttp_client, loop):
     text = await resp.json()
     assert "Request is invalid" in text["error"]
     assert text["errors"]
+
+
+async def test_class_based_valid_request(aiohttp_client, loop):
+    app = web.Application(loop=loop)
+    app.router.add_view('/', HelloView)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{"text": "foobar"}')
+    assert resp.status == 200
+    text = await resp.text()
+    assert 'Hello world' in text
+
+    resp = await client.get('/', data='{"text": "foobar"}')
+    assert resp.status == 200
+    text = await resp.text()
+    assert 'Hello world' in text
