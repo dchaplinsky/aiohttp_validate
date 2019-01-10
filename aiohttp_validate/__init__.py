@@ -100,8 +100,10 @@ def validate(request_schema=None, response_schema=None):
 
             # Supports class based views see web.View
             if isinstance(args[0], AbstractView):
+                class_based = True
                 request = args[0].request
             else:
+                class_based = False
                 request = args[-1]
 
             # Strictly expect json object here
@@ -117,7 +119,11 @@ def validate(request_schema=None, response_schema=None):
                 _validate_data(req_body, request_schema,
                                _request_schema_validator)
 
-            context = yield from coro(req_body, request)
+            coro_args = req_body, request
+            if class_based:
+                coro_args = (args[0], ) + coro_args
+
+            context = yield from coro(*coro_args)
 
             # No validation of response for websockets stream
             if isinstance(context, web.StreamResponse):
