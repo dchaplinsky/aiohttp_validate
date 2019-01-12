@@ -9,5 +9,5 @@ pytest-aiohttp==0.3.0
 Sphinx==1.8.2
 cryptography==2.4.1
 PyYAML==4.2b4
-pytest==4.0.0
+pytest==4.1.1
 docutils==0.14
