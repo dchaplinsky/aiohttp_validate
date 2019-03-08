@@ -8,6 +8,6 @@ coverage==4.5.2
 pytest-aiohttp==0.3.0
 Sphinx==1.8.2
 cryptography==2.4.1
-PyYAML==4.2b4
+PyYAML==5.1b5
 pytest==4.0.0
 docutils==0.14
