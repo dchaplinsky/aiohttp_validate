@@ -35,6 +35,15 @@ def _validate_data(data, schema, validator_cls):
     """
     validator = validator_cls(schema)
     _errors = defaultdict(list)
+	
+    def set_nested_item(dataDict, mapList, key, val):
+        for _key in mapList:
+            dataDict.setdefault(_key, {})
+            dataDict = dataDict[_key]
+
+        dataDict.setdefault(key, list())
+        dataDict[key].append(val)
+	
     for err in validator.iter_errors(data):
         path = err.schema_path
 
@@ -62,10 +71,12 @@ def _validate_data(data, schema, validator_cls):
         # If validation failed by missing property,
         # then parse err.message to find property name
         # as it always first word enclosed in quotes
-        if key == "required":
+        if "required" in path or key == "required":
             key = err.message.split("'")[1]
+        elif err.relative_path:
+            key = err.relative_path.pop()
 
-        _errors[key].append(str(err))
+        set_nested_item(_errors, err.relative_path, key, err.message)
 
     if _errors:
         _raise_exception(
