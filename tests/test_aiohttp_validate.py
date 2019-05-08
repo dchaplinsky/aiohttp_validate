@@ -82,6 +82,27 @@ async def validate_output(request, *args):
     return request
 
 
+@validate(
+    request_schema={
+        "type": "object",
+        "required": ["firstName", "nested"],
+        "properties": {
+            "firstName": {"type": "string"},
+            "nested": {
+                "type": "object",
+                "required": ["test_for_nested"],
+                "properties": {
+                    "test_for_nested": {"type": "string"}
+                }
+            }
+        }
+    },
+    response_schema=None,
+)
+async def validate_nested_errors(request, *args):
+    return request
+
+
 async def test_invalid_request(aiohttp_client, loop):
     app = web.Application(loop=loop)
     app.router.add_post('/', hello)
@@ -181,3 +202,24 @@ async def test_class_based_valid_request(aiohttp_client, loop):
     assert resp.status == 200
     text = await resp.text()
     assert 'Hello world' in text
+
+
+async def test_nested_errors(aiohttp_client, loop):
+    app = web.Application(loop=loop)
+    app.router.add_view('/', validate_nested_errors)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{"nested": {}}')
+    assert resp.status == 400
+    text = await resp.json()
+
+    # response for errors whould be like:
+    # "errors": {
+    #     "firstName": ["\'firstName\' is a required property"],
+    #     "nested": {
+    #         "test_for_nested": ["\'test_for_nested\' is a required property"]
+    #     }
+    # }
+    errors = text["errors"]
+    assert errors["firstName"]
+    assert errors["nested"]["test_for_nested"]
