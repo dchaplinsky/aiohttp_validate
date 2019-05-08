@@ -35,7 +35,7 @@ def _validate_data(data, schema, validator_cls):
     """
     validator = validator_cls(schema)
     _errors = defaultdict(list)
-	
+
     def set_nested_item(dataDict, mapList, key, val):
         for _key in mapList:
             dataDict.setdefault(_key, {})
@@ -43,7 +43,7 @@ def _validate_data(data, schema, validator_cls):
 
         dataDict.setdefault(key, list())
         dataDict[key].append(val)
-	
+
     for err in validator.iter_errors(data):
         path = err.schema_path
 
@@ -90,6 +90,7 @@ def validate(request_schema=None, response_schema=None):
     Decorate request handler to make it automagically validate it's request
     and response.
     """
+
     def wrapper(func):
         # Validating the schemas itself.
         # Die with exception if they aren't valid
@@ -132,7 +133,7 @@ def validate(request_schema=None, response_schema=None):
 
             coro_args = req_body, request
             if class_based:
-                coro_args = (args[0], ) + coro_args
+                coro_args = (args[0],) + coro_args
 
             context = yield from coro(*coro_args)
 
@@ -147,7 +148,7 @@ def validate(request_schema=None, response_schema=None):
 
             try:
                 return web.json_response(context)
-            except (TypeError, ):
+            except (TypeError,):
                 _raise_exception(
                     web.HTTPInternalServerError,
                     "Response is malformed; could not encode JSON object.")
@@ -156,6 +157,7 @@ def validate(request_schema=None, response_schema=None):
         setattr(wrapped, "_request_schema", request_schema)
         setattr(wrapped, "_response_schema", response_schema)
         return wrapped
+
     return wrapper
 
 
