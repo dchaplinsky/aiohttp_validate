@@ -69,7 +69,7 @@ Developing
 
 Install requirement and launch tests::
 
-    pip install -r requirements-dev.txt
+    pip install -r requirements_dev.txt
     py.test
 
 
