@@ -115,7 +115,10 @@ def validate(request_schema=None, response_schema=None):
                 class_based = True
                 request = args[0].request
             else:
-                class_based = False
+                if func.__name__ != func.__qualname__:
+                    class_based = True
+                else:
+                    class_based = False
                 request = args[-1]
 
             # Strictly expect json object here
