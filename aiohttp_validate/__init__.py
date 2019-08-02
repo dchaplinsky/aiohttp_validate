@@ -134,7 +134,7 @@ def validate(request_schema=None, response_schema=None):
                 _validate_data(req_body, request_schema,
                                _request_schema_validator)
 
-            coro_args = request, req_body
+            coro_args = req_body, request
             if class_based:
                 coro_args = (args[0],) + coro_args
 

@@ -13,6 +13,7 @@ from aiohttp_validate import validate
 from aiohttp import web
 
 
+
 @validate(
     request_schema={
         "type": "object",
