@@ -78,6 +78,12 @@ Credits
 That package is influenced by Tornado-JSON_ written by Hamza Faran 
 Code to parse errors is written by `Ruslan Karalkin`_
 
+Versioning
+----------
+This software follows `Semantic Versioning`_
+
+.. _Semantic Versioning: http://semver.org/
+
 License
 -------
 
