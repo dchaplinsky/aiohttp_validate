@@ -36,11 +36,10 @@ def _raise_exception(cls: type, reason: str, data: Any = None) -> NoReturn:
     )
 
 
-def _validate_data(data: Any, schema: dict, validator_cls: type) -> None:
+def _validate_data(data: Any, validator: Any) -> None:
     """
-    Validate the dict against given schema (using given validator class).
+    Validate the data against the given (prebuilt) schema validator.
     """
-    validator = validator_cls(schema)
     _errors = defaultdict(list)
 
     def set_nested_item(dataDict, mapList, key, val):
@@ -93,7 +92,8 @@ def _validate_data(data: Any, schema: dict, validator_cls: type) -> None:
 
 
 def validate(request_schema: Optional[dict] = None,
-             response_schema: Optional[dict] = None):
+             response_schema: Optional[dict] = None,
+             format_checker: Optional[Any] = None):
     """
     Decorate request handler to make it automagically validate its request
     and response.
@@ -107,18 +107,27 @@ def validate(request_schema: Optional[dict] = None,
     Because the ``(data, status)`` form is detected by shape, response data
     that is itself a 2-tuple ending in an int must be returned as a list
     (JSON has no tuples anyway) or as a ready ``web.json_response``.
+
+    Pass ``format_checker=jsonschema.FormatChecker()`` to also validate
+    string formats such as ``date-time`` or ``email`` (off by default,
+    matching jsonschema's own behavior).
     """
 
     def wrapper(func):
-        # Validating the schemas itself.
-        # Die with exception if they aren't valid
-        if request_schema is not None:
-            _request_schema_validator = validator_for(request_schema)
-            _request_schema_validator.check_schema(request_schema)
+        # Validate the schemas themselves and build their validators once,
+        # at decoration time. Die with exception if they aren't valid
+        def build_validator(schema):
+            validator_cls = validator_for(schema)
+            validator_cls.check_schema(schema)
+            return validator_cls(schema, format_checker=format_checker)
 
+        _request_validator = None
+        if request_schema is not None:
+            _request_validator = build_validator(request_schema)
+
+        _response_validator = None
         if response_schema is not None:
-            _response_schema_validator = validator_for(response_schema)
-            _response_schema_validator.check_schema(response_schema)
+            _response_validator = build_validator(response_schema)
 
         func_is_coro = inspect.iscoroutinefunction(func)
 
@@ -144,9 +153,8 @@ def validate(request_schema: Optional[dict] = None,
                     "Request is malformed; could not decode JSON object.")
 
             # Validate request data against request schema (if given)
-            if request_schema is not None:
-                _validate_data(req_body, request_schema,
-                               _request_schema_validator)
+            if _request_validator is not None:
+                _validate_data(req_body, _request_validator)
 
             coro_args = req_body, request
             if class_based:
@@ -156,6 +164,10 @@ def validate(request_schema: Optional[dict] = None,
                 context = await func(*coro_args)
             else:
                 context = func(*coro_args)
+                # 1.x compat: a plain function may hand back an awaitable
+                # (e.g. a lambda delegating to a coroutine function)
+                if inspect.isawaitable(context):
+                    context = await context
 
             # No validation of response for websockets stream
             if isinstance(context, web.StreamResponse):
@@ -172,9 +184,8 @@ def validate(request_schema: Optional[dict] = None,
                 context, status = context
 
             # Validate response data against response schema (if given)
-            if response_schema is not None:
-                _validate_data(context, response_schema,
-                               _response_schema_validator)
+            if _response_validator is not None:
+                _validate_data(context, _response_validator)
 
             try:
                 return web.json_response(context, status=status)

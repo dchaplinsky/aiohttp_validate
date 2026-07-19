@@ -67,6 +67,13 @@ your response data is itself such a tuple, return it as a list instead —
 JSON has no tuples, the wire format is identical — or return a ready
 ``web.json_response``.
 
+To also validate string formats (``date``, ``email``, ...), pass a format
+checker (extra format support follows `jsonschema's rules`_)::
+
+    @validate(request_schema=..., format_checker=jsonschema.FormatChecker())
+
+.. _jsonschema's rules: https://python-jsonschema.readthedocs.io/en/stable/validate/#validating-formats
+
 Features
 --------
 * The decorator to (optionally) validate the request to your aiohttp endpoint and it's response.

@@ -9,6 +9,8 @@ Tests for `aiohttp_validate` module.
 """
 
 from datetime import datetime
+import jsonschema
+
 from aiohttp_validate import validate
 from aiohttp import web
 
@@ -335,3 +337,49 @@ async def test_tuple_data_serialized_as_array(aiohttp_client):
     assert resp.status == 200
     data = await resp.json()
     assert data == ["a", "b"]
+
+
+async def _delegate_target(request, *args):
+    return {"delegated": True}
+
+
+# A plain (non-async) callable returning an awaitable - 1.x supported this
+delegating_handler = validate(request_schema={"type": "object"})(
+    lambda request, *args: _delegate_target(request, *args))
+
+
+@validate(
+    request_schema={
+        "type": "object",
+        "properties": {"when": {"type": "string", "format": "date"}},
+        "required": ["when"],
+    },
+    format_checker=jsonschema.FormatChecker(),
+)
+async def needs_datetime(request, *args):
+    return {"ok": True}
+
+
+async def test_sync_handler_returning_awaitable(aiohttp_client):
+    app = web.Application()
+    app.router.add_post('/', delegating_handler)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{}')
+    assert resp.status == 200
+    data = await resp.json()
+    assert data["delegated"] is True
+
+
+async def test_format_checker(aiohttp_client):
+    app = web.Application()
+    app.router.add_post('/', needs_datetime)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{"when": "2026-07-19"}')
+    assert resp.status == 200
+
+    resp = await client.post('/', data='{"when": "not a date"}')
+    assert resp.status == 400
+    data = await resp.json()
+    assert data["errors"]["when"]
