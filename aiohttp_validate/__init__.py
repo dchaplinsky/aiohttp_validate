@@ -10,6 +10,7 @@ from typing import Any, NoReturn, Optional
 
 from aiohttp import web
 from aiohttp.abc import AbstractView
+from jsonschema import FormatChecker
 from jsonschema.validators import validator_for
 
 __author__ = """Dmitry Chaplinsky"""
@@ -93,7 +94,7 @@ def _validate_data(data: Any, validator: Any) -> None:
 
 def validate(request_schema: Optional[dict] = None,
              response_schema: Optional[dict] = None,
-             format_checker: Optional[Any] = None):
+             format_checker: Optional[FormatChecker] = None):
     """
     Decorate request handler to make it automagically validate its request
     and response.
@@ -121,15 +122,12 @@ def validate(request_schema: Optional[dict] = None,
             validator_cls.check_schema(schema)
             return validator_cls(schema, format_checker=format_checker)
 
-        _request_validator = None
-        if request_schema is not None:
-            _request_validator = build_validator(request_schema)
-
-        _response_validator = None
-        if response_schema is not None:
-            _response_validator = build_validator(response_schema)
-
-        func_is_coro = inspect.iscoroutinefunction(func)
+        _request_validator = (
+            build_validator(request_schema)
+            if request_schema is not None else None)
+        _response_validator = (
+            build_validator(response_schema)
+            if response_schema is not None else None)
 
         @functools.wraps(func)
         async def wrapped(*args):
@@ -160,14 +158,11 @@ def validate(request_schema: Optional[dict] = None,
             if class_based:
                 coro_args = (args[0],) + coro_args
 
-            if func_is_coro:
-                context = await func(*coro_args)
-            else:
-                context = func(*coro_args)
-                # 1.x compat: a plain function may hand back an awaitable
-                # (e.g. a lambda delegating to a coroutine function)
-                if inspect.isawaitable(context):
-                    context = await context
+            # Covers both coroutine functions and plain callables that
+            # return an awaitable (1.x supported the latter too)
+            context = func(*coro_args)
+            if inspect.isawaitable(context):
+                context = await context
 
             # No validation of response for websockets stream
             if isinstance(context, web.StreamResponse):
