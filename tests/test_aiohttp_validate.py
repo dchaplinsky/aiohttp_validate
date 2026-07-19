@@ -258,3 +258,80 @@ async def test_sync_handler(aiohttp_client):
     assert resp.status == 200
     data = await resp.json()
     assert data["sync"] is True
+
+
+class PlainAPI:
+    """Not a web.View - exercises the qualname-based detection."""
+    @validate(request_schema={"type": "object"})
+    async def post(self, data, request):
+        return {"plain_class": True}
+
+
+@validate(request_schema=None)
+async def passthrough(request, *args):
+    return web.json_response({"raw": True}, status=418)
+
+
+@validate(request_schema=None)
+async def bool_tuple(request, *args):
+    return {"flag": "x"}, True
+
+
+@validate(request_schema=None)
+async def tuple_data(request, *args):
+    return ("a", "b")
+
+
+async def test_type_mismatch_error_path(aiohttp_client):
+    app = web.Application()
+    app.router.add_post('/', hello)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{"text": 123}')
+    assert resp.status == 400
+    text = await resp.json()
+    assert text["errors"]["text"]
+
+
+async def test_plain_class_method(aiohttp_client):
+    app = web.Application()
+    app.router.add_post('/', PlainAPI().post)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{}')
+    assert resp.status == 200
+    data = await resp.json()
+    assert data["plain_class"] is True
+
+
+async def test_stream_response_passthrough(aiohttp_client):
+    app = web.Application()
+    app.router.add_post('/', passthrough)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{}')
+    assert resp.status == 418
+    data = await resp.json()
+    assert data["raw"] is True
+
+
+async def test_bool_tuple_is_data_not_status(aiohttp_client):
+    app = web.Application()
+    app.router.add_post('/', bool_tuple)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{}')
+    assert resp.status == 200
+    data = await resp.json()
+    assert data == [{"flag": "x"}, True]
+
+
+async def test_tuple_data_serialized_as_array(aiohttp_client):
+    app = web.Application()
+    app.router.add_post('/', tuple_data)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{}')
+    assert resp.status == 200
+    data = await resp.json()
+    assert data == ["a", "b"]
