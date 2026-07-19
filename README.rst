@@ -6,19 +6,11 @@ aiohttp_validate
 .. image:: https://img.shields.io/pypi/v/aiohttp_validate.svg
         :target: https://pypi.python.org/pypi/aiohttp_validate
 
-.. image:: https://img.shields.io/travis/dchaplinsky/aiohttp_validate.svg
-        :target: https://travis-ci.org/dchaplinsky/aiohttp_validate
-
-.. image:: https://readthedocs.org/projects/aiohttp-validate/badge/?version=latest
-        :target: https://aiohttp-validate.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
-.. image:: https://pyup.io/repos/github/dchaplinsky/aiohttp_validate/shield.svg
-     :target: https://pyup.io/repos/github/dchaplinsky/aiohttp_validate/
-     :alt: Updates
+.. image:: https://github.com/dchaplinsky/aiohttp_validate/actions/workflows/tests.yml/badge.svg
+        :target: https://github.com/dchaplinsky/aiohttp_validate/actions/workflows/tests.yml
 
 
-Simple library that helps you validate your API endpoints requests/responses with jsonschema_. Documentation is also available here at https://aiohttp-validate.readthedocs.io.
+Simple library that helps you validate your API endpoints requests/responses with jsonschema_. Requires Python 3.9+ and aiohttp 3.8+.
 
 
 
@@ -57,6 +49,19 @@ Complete example of validation for `text tokenization microservice`_::
     async def tokenize_text_handler(request, *args):
         return tokenize_text(request["text"])
 
+The wrapped handler receives the parsed and validated JSON body as its
+first argument and the original aiohttp request object as the second::
+
+    async def handler(data, request):
+        pool = request.app["redis_pool"]  # the real request is right here
+        ...
+
+To respond with a status code other than 200, return a ``(data, status)``
+tuple::
+
+    async def create_handler(data, request):
+        return {"id": new_id}, 201
+
 Features
 --------
 * The decorator to (optionally) validate the request to your aiohttp endpoint and it's response.
@@ -67,10 +72,10 @@ Features
 Developing
 ----------
 
-Install requirement and launch tests::
+Install with test dependencies and launch tests::
 
-    pip install -r requirements-dev.txt
-    py.test
+    pip install -e .[test]
+    pytest
 
 
 Credits

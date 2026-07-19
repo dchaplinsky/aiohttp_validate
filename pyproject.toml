@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiohttp_validate"
+dynamic = ["version"]
+description = "Simple library that helps you validate your API endpoints requests/responses with json schema"
+readme = "README.rst"
+license = "MIT"
+authors = [
+    {name = "Dmitry Chaplinsky", email = "chaplinsky.dmitry@gmail.com"},
+]
+requires-python = ">=3.9"
+keywords = ["aiohttp", "jsonschema", "validation", "api"]
+dependencies = [
+    "aiohttp>=3.8",
+    "jsonschema>=3.0",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: aiohttp",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+]
+
+[project.urls]
+Homepage = "https://github.com/dchaplinsky/aiohttp_validate"
+Issues = "https://github.com/dchaplinsky/aiohttp_validate/issues"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-aiohttp",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.setuptools]
+packages = ["aiohttp_validate"]
+
+[tool.setuptools.package-data]
+aiohttp_validate = ["py.typed"]
+
+[tool.setuptools.dynamic]
+version = {attr = "aiohttp_validate.__version__"}

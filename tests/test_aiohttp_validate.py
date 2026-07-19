@@ -103,8 +103,8 @@ async def validate_nested_errors(request, *args):
     return request
 
 
-async def test_invalid_request(aiohttp_client, loop):
-    app = web.Application(loop=loop)
+async def test_invalid_request(aiohttp_client):
+    app = web.Application()
     app.router.add_post('/', hello)
     app.router.add_get('/', hello)
     client = await aiohttp_client(app)
@@ -125,8 +125,8 @@ async def test_invalid_request(aiohttp_client, loop):
     assert 'Request is malformed' in text["error"]
 
 
-async def test_wrong_request_format(aiohttp_client, loop):
-    app = web.Application(loop=loop)
+async def test_wrong_request_format(aiohttp_client):
+    app = web.Application()
     app.router.add_post('/', hello)
     client = await aiohttp_client(app)
 
@@ -137,8 +137,8 @@ async def test_wrong_request_format(aiohttp_client, loop):
     assert text["errors"]
 
 
-async def test_correct_request(aiohttp_client, loop):
-    app = web.Application(loop=loop)
+async def test_correct_request(aiohttp_client):
+    app = web.Application()
     app.router.add_post('/', hello)
     app.router.add_get('/', hello)
     client = await aiohttp_client(app)
@@ -154,8 +154,8 @@ async def test_correct_request(aiohttp_client, loop):
     assert 'Hello world' in text
 
 
-async def test_invalid_response(aiohttp_client, loop):
-    app = web.Application(loop=loop)
+async def test_invalid_response(aiohttp_client):
+    app = web.Application()
     app.router.add_post('/', invalid_enc)
     app.router.add_get('/', invalid_enc)
     client = await aiohttp_client(app)
@@ -171,8 +171,8 @@ async def test_invalid_response(aiohttp_client, loop):
     assert 'Response is malformed' in text["error"]
 
 
-async def test_wrong_response_format(aiohttp_client, loop):
-    app = web.Application(loop=loop)
+async def test_wrong_response_format(aiohttp_client):
+    app = web.Application()
     app.router.add_post('/', validate_output)
     client = await aiohttp_client(app)
 
@@ -188,8 +188,8 @@ async def test_wrong_response_format(aiohttp_client, loop):
     assert text["errors"]
 
 
-async def test_class_based_valid_request(aiohttp_client, loop):
-    app = web.Application(loop=loop)
+async def test_class_based_valid_request(aiohttp_client):
+    app = web.Application()
     app.router.add_view('/', HelloView)
     client = await aiohttp_client(app)
 
@@ -204,8 +204,8 @@ async def test_class_based_valid_request(aiohttp_client, loop):
     assert 'Hello world' in text
 
 
-async def test_nested_errors(aiohttp_client, loop):
-    app = web.Application(loop=loop)
+async def test_nested_errors(aiohttp_client):
+    app = web.Application()
     app.router.add_view('/', validate_nested_errors)
     client = await aiohttp_client(app)
 
@@ -223,3 +223,38 @@ async def test_nested_errors(aiohttp_client, loop):
     errors = text["errors"]
     assert errors["firstName"]
     assert errors["nested"]["test_for_nested"]
+
+
+@validate(
+    request_schema={"type": "object"},
+    response_schema=None,
+)
+async def created(request, *args):
+    return {"id": 42}, 201
+
+
+@validate(request_schema={"type": "object"})
+def sync_handler(request, *args):
+    return {"sync": True}
+
+
+async def test_custom_status(aiohttp_client):
+    app = web.Application()
+    app.router.add_post('/', created)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{}')
+    assert resp.status == 201
+    data = await resp.json()
+    assert data["id"] == 42
+
+
+async def test_sync_handler(aiohttp_client):
+    app = web.Application()
+    app.router.add_post('/', sync_handler)
+    client = await aiohttp_client(app)
+
+    resp = await client.post('/', data='{}')
+    assert resp.status == 200
+    data = await resp.json()
+    assert data["sync"] is True
