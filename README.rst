@@ -62,6 +62,11 @@ tuple::
     async def create_handler(data, request):
         return {"id": new_id}, 201
 
+The tuple form is detected by shape (a 2-tuple ending in an int), so if
+your response data is itself such a tuple, return it as a list instead —
+JSON has no tuples, the wire format is identical — or return a ready
+``web.json_response``.
+
 Features
 --------
 * The decorator to (optionally) validate the request to your aiohttp endpoint and it's response.

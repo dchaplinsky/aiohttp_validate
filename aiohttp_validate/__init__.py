@@ -6,7 +6,7 @@ import functools
 import inspect
 import json
 from collections import defaultdict
-from typing import Any, Optional
+from typing import Any, NoReturn, Optional
 
 from aiohttp import web
 from aiohttp.abc import AbstractView
@@ -19,11 +19,11 @@ __version__ = "2.0"
 __all__ = ["validate"]
 
 
-def _raise_exception(cls: type, reason: str, data: Any = None) -> None:
+def _raise_exception(cls: type, reason: str, data: Any = None) -> NoReturn:
     """
     Raise aiohttp exception and pass payload/reason into it.
     """
-    text_dict: dict = {
+    text_dict = {
         "error": reason
     }
 
@@ -41,7 +41,7 @@ def _validate_data(data: Any, schema: dict, validator_cls: type) -> None:
     Validate the dict against given schema (using given validator class).
     """
     validator = validator_cls(schema)
-    _errors: dict = defaultdict(list)
+    _errors = defaultdict(list)
 
     def set_nested_item(dataDict, mapList, key, val):
         for _key in mapList:
@@ -103,6 +103,10 @@ def validate(request_schema: Optional[dict] = None,
     return either the response data, or a ``(data, status)`` tuple to set
     the response status code, or a ready ``StreamResponse`` (which skips
     response validation).
+
+    Because the ``(data, status)`` form is detected by shape, response data
+    that is itself a 2-tuple ending in an int must be returned as a list
+    (JSON has no tuples anyway) or as a ready ``web.json_response``.
     """
 
     def wrapper(func):
@@ -115,6 +119,8 @@ def validate(request_schema: Optional[dict] = None,
         if response_schema is not None:
             _response_schema_validator = validator_for(response_schema)
             _response_schema_validator.check_schema(response_schema)
+
+        func_is_coro = inspect.iscoroutinefunction(func)
 
         @functools.wraps(func)
         async def wrapped(*args):
@@ -146,7 +152,7 @@ def validate(request_schema: Optional[dict] = None,
             if class_based:
                 coro_args = (args[0],) + coro_args
 
-            if inspect.iscoroutinefunction(func):
+            if func_is_coro:
                 context = await func(*coro_args)
             else:
                 context = func(*coro_args)
@@ -155,9 +161,14 @@ def validate(request_schema: Optional[dict] = None,
             if isinstance(context, web.StreamResponse):
                 return context
 
+            # Flask-style status sugar: a 2-tuple ending in an int (but
+            # not a bool) means (data, status). Tuple-shaped response DATA
+            # must be returned as a list instead (JSON arrays are lists
+            # anyway), or as a ready json_response
             status = 200
             if isinstance(context, tuple) and len(context) == 2 and \
-                    isinstance(context[1], int):
+                    isinstance(context[1], int) and \
+                    not isinstance(context[1], bool):
                 context, status = context
 
             # Validate response data against response schema (if given)
